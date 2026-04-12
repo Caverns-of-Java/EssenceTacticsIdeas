@@ -138,3 +138,17 @@ input, textarea, select { width: 100%; padding: 8px; border: 1px solid #ddd; bor
 	/* in narrow screens, allow all sections to occupy full width */
 	#list-view, #add-view, #detail-panel { grid-column: 1; }
 }
+
+/* Button styles */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;border:1px solid transparent;background:#fff;color:#111;cursor:pointer;transition:all .12s ease}
+.btn:focus{outline:2px solid rgba(0,120,212,0.12);outline-offset:2px}
+.btn[disabled]{opacity:0.6;cursor:not-allowed}
+.btn-primary{background:#0078d4;color:#fff;border-color:#006bb3}
+.btn-primary:hover:not([disabled]){filter:brightness(.95)}
+.btn-secondary{background:#f3f4f6;color:#111;border-color:#e5e7eb}
+.btn-danger{background:#ef4444;color:#fff;border-color:#dc2626}
+
+/* loading spinner on button */
+.btn.loading{position:relative;color:transparent}
+.btn.loading::after{content:"";position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;border:2px solid rgba(255,255,255,0.6);border-top-color:transparent;border-right-color:transparent;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}

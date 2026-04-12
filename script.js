@@ -95,7 +95,8 @@ function renderList(){
   State.ideas.forEach(idea=>{
     const li = document.createElement('li');
     li.dataset.id = idea.id;
-    li.addEventListener('click', ()=> showDetails(idea.id));
+    // Open the Edit view directly when a list card is clicked
+    li.addEventListener('click', ()=> enterEditMode(idea));
 
     const header = document.createElement('div');
     header.className = 'idea-header';
@@ -242,14 +243,24 @@ async function init(){
       tags: $('#fld-tags').value.trim(),
       details: $('#fld-details').value.trim()
     };
-    const editId = $('#idea-form').dataset.editId;
+    const form = $('#idea-form');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const prevText = submitBtn ? submitBtn.textContent : null;
+    const editId = form.dataset.editId;
     try{
-      if(editId){ data.id = Number(editId); const r = await ApiClient.updateIdea(data); delete $('#idea-form').dataset.editId; }
+      if(submitBtn){ submitBtn.disabled = true; submitBtn.classList.add('loading'); }
+      setStatus('loading');
+      if(editId){ data.id = Number(editId); const r = await ApiClient.updateIdea(data); delete form.dataset.editId; }
       else { const r = await ApiClient.addIdea(data); }
       // persist custom type if new
       TypeSelector.addIfMissing(data.type);
-      await refresh(); $('#tab-list').click();
-    }catch(e){ console.error(e); alert('Save failed'); }
+      await refresh();
+      $('#tab-list').click();
+      setStatus('ready');
+    }catch(e){ console.error(e); setStatus('error', 'Save failed'); alert('Save failed'); }
+    finally{
+      if(submitBtn){ submitBtn.disabled = false; submitBtn.classList.remove('loading'); if(prevText) submitBtn.textContent = prevText; }
+    }
   });
   $('#cancel').addEventListener('click', ()=>{ $('#idea-form').reset(); $('#tab-list').click(); delete $('#idea-form').dataset.editId; });
 
@@ -264,13 +275,22 @@ async function init(){
       tags: $('#fld-tags-edit').value.trim(),
       details: $('#fld-details-edit').value.trim()
     };
+    const form = $('#edit-idea-form');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const prevText = submitBtn ? submitBtn.textContent : null;
     try{
+      if(submitBtn){ submitBtn.disabled = true; submitBtn.classList.add('loading'); }
+      setStatus('loading');
       const r = await ApiClient.updateIdea(data);
       TypeSelector.addIfMissing(data.type);
       exitEditMode();
       await refresh();
       $('#tab-list').click();
+      setStatus('ready');
     }catch(e){ console.error(e); setStatus('error', 'Save failed'); alert('Save failed'); }
+    finally{
+      if(submitBtn){ submitBtn.disabled = false; submitBtn.classList.remove('loading'); if(prevText) submitBtn.textContent = prevText; }
+    }
   });
   $('#cancel-edit').addEventListener('click', ()=>{ exitEditMode(); $('#tab-list').click(); });
 
