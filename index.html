@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#0078d4" />
+  <title>Essence Tactics Ideas</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.svg">
+</head>
+<body>
+  <header>
+    <h1>Essence Tactics Ideas</h1>
+    <nav>
+      <button id="tab-list" class="tab active">List</button>
+      <button id="tab-add" class="tab">Add</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="list-view" class="view">
+      <div class="controls">
+        <input id="search" placeholder="Search by name, type, or tags" />
+        <button id="refresh">Refresh</button>
+      </div>
+      <ul id="ideas-list"></ul>
+    </section>
+
+    <section id="add-view" class="view hidden">
+      <form id="idea-form">
+        <label>Type
+          <input id="fld-type" placeholder="Type or choose..." autocomplete="off">
+          <div id="type-suggestions" class="type-suggestions hidden" aria-hidden="true"></div>
+        </label>
+        <label>Name<input id="fld-name" required maxlength="100"></label>
+        <label>Tags<input id="fld-tags" placeholder="comma-separated"></label>
+        <label>Details<textarea id="fld-details" maxlength="2000"></textarea></label>
+        <div class="form-actions">
+          <button type="submit">Save</button>
+          <button type="button" id="cancel">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <aside id="detail-panel" class="detail hidden"></aside>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
