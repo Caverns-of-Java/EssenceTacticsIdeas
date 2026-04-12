@@ -64,13 +64,28 @@ const State = {
   ideas: [],
   async load(){
     try{
+      setStatus('loading');
       const r = await ApiClient.fetchIdeas();
-      if(r && r.success) this.ideas = r.data || [];
-      else this.ideas = [];
-    }catch(e){ console.error(e); }
+      if(r && r.success) { this.ideas = r.data || []; setStatus('ready'); }
+      else { this.ideas = []; setStatus('error', r && r.message ? r.message : 'No data'); }
+    }catch(e){ console.error(e); setStatus('error', e.message); }
   },
   find(id){ return this.ideas.find(i=>i.id==id); }
 };
+
+// edit mode state
+let editMode = false;
+let currentEditId = null;
+
+function setStatus(state, text){
+  const el = document.getElementById('status-chip');
+  if(!el) return;
+  el.className = 'status-chip';
+  if(state === 'ready') el.classList.add('status-ready');
+  else if(state === 'loading') el.classList.add('status-loading');
+  else if(state === 'error') el.classList.add('status-error');
+  el.textContent = text || (state==='loading'? 'Loading' : state==='ready'? 'Ready' : 'Error');
+}
 
 // UI
 function $(sel){return document.querySelector(sel)}
@@ -126,7 +141,7 @@ function showDetails(id){
   const edit = document.createElement('button');
   edit.textContent = 'Edit';
   edit.className = 'btn btn-edit';
-  edit.addEventListener('click', ()=> openEditForm(idea));
+  edit.addEventListener('click', ()=> enterEditMode(idea));
 
   const del = document.createElement('button');
   del.textContent = 'Delete';
@@ -138,15 +153,42 @@ function showDetails(id){
 }
 
 function openEditForm(idea){
-  // switch to Add tab and populate
-  // hide detail panel when editing
+  // kept for compatibility - delegate to enterEditMode
+  enterEditMode(idea);
+}
+
+function enterEditMode(idea){
+  editMode = true;
+  currentEditId = idea.id;
+  // populate edit form fields
+  $('#fld-type-edit').value = idea.type || '';
+  $('#fld-name-edit').value = idea.name || '';
+  $('#fld-tags-edit').value = idea.tags || '';
+  $('#fld-details-edit').value = idea.details || '';
+  // enable and activate Edit tab, switch views
+  const tabEdit = $('#tab-edit'); tabEdit.removeAttribute('disabled');
+  $('#list-view').classList.add('hidden');
+  $('#add-view').classList.add('hidden');
+  $('#edit-view').classList.remove('hidden');
+  // hide detail panel when entering Edit view
   $('#detail-panel').classList.add('hidden');
-  $('#tab-add').click();
-  $('#fld-type').value = idea.type;
-  $('#fld-name').value = idea.name;
-  $('#fld-tags').value = idea.tags || '';
-  $('#fld-details').value = idea.details || '';
-  $('#idea-form').dataset.editId = idea.id;
+  tabEdit.classList.add('active'); $('#tab-list').classList.remove('active'); $('#tab-add').classList.remove('active');
+  // attach type selector to edit input
+  TypeSelector.attach($('#fld-type-edit'));
+}
+
+function exitEditMode(){
+  editMode = false;
+  currentEditId = null;
+  const tabEdit = $('#tab-edit'); tabEdit.setAttribute('disabled','');
+  $('#edit-view').classList.add('hidden');
+  tabEdit.classList.remove('active');
+  // Ensure the Add form is cleared when leaving edit mode
+  const addForm = document.getElementById('idea-form');
+  if(addForm){ addForm.reset(); delete addForm.dataset.editId; }
+  // hide detail panel when exiting edit mode
+  const detail = document.getElementById('detail-panel');
+  if(detail) detail.classList.add('hidden');
 }
 
 async function doDelete(id){
@@ -165,8 +207,30 @@ async function init(){
   TypeSelector.attach($('#fld-type'));
 
   // tabs
-  $('#tab-list').addEventListener('click', ()=>{ $('#list-view').classList.remove('hidden'); $('#add-view').classList.add('hidden'); $('#tab-list').classList.add('active'); $('#tab-add').classList.remove('active'); });
-  $('#tab-add').addEventListener('click', ()=>{ $('#list-view').classList.add('hidden'); $('#add-view').classList.remove('hidden'); $('#tab-add').classList.add('active'); $('#tab-list').classList.remove('active'); });
+  $('#tab-list').addEventListener('click', ()=>{ $('#list-view').classList.remove('hidden'); $('#add-view').classList.add('hidden'); $('#edit-view').classList.add('hidden'); $('#tab-list').classList.add('active'); $('#tab-add').classList.remove('active'); $('#tab-edit').classList.remove('active'); });
+  $('#tab-add').addEventListener('click', ()=>{ 
+    // reset form when user opens Add manually
+    const form = $('#idea-form');
+    form.reset();
+    delete form.dataset.editId;
+    $('#list-view').classList.add('hidden'); 
+    $('#add-view').classList.remove('hidden'); 
+    $('#edit-view').classList.add('hidden');
+    // hide detail panel when in Add view
+    $('#detail-panel').classList.add('hidden');
+    $('#tab-add').classList.add('active'); 
+    $('#tab-list').classList.remove('active'); 
+    // ensure edit mode cleared
+    exitEditMode();
+  });
+  $('#tab-edit').addEventListener('click', ()=>{
+    // only allow if enabled
+    const tab = $('#tab-edit'); if(tab.hasAttribute('disabled')) return;
+    $('#list-view').classList.add('hidden'); $('#add-view').classList.add('hidden'); $('#edit-view').classList.remove('hidden');
+    // hide detail panel when in Edit view
+    $('#detail-panel').classList.add('hidden');
+    tab.classList.add('active'); $('#tab-list').classList.remove('active'); $('#tab-add').classList.remove('active');
+  });
   $('#refresh').addEventListener('click', refresh);
 
   // form
@@ -189,6 +253,27 @@ async function init(){
   });
   $('#cancel').addEventListener('click', ()=>{ $('#idea-form').reset(); $('#tab-list').click(); delete $('#idea-form').dataset.editId; });
 
+  // edit form handlers
+  $('#edit-idea-form').addEventListener('submit', async (ev)=>{
+    ev.preventDefault();
+    if(!editMode || !currentEditId) return;
+    const data = {
+      id: currentEditId,
+      type: $('#fld-type-edit').value,
+      name: $('#fld-name-edit').value.trim(),
+      tags: $('#fld-tags-edit').value.trim(),
+      details: $('#fld-details-edit').value.trim()
+    };
+    try{
+      const r = await ApiClient.updateIdea(data);
+      TypeSelector.addIfMissing(data.type);
+      exitEditMode();
+      await refresh();
+      $('#tab-list').click();
+    }catch(e){ console.error(e); setStatus('error', 'Save failed'); alert('Save failed'); }
+  });
+  $('#cancel-edit').addEventListener('click', ()=>{ exitEditMode(); $('#tab-list').click(); });
+
   // search
   $('#search').addEventListener('input', (e)=>{
     const q = e.target.value.toLowerCase();
@@ -197,6 +282,15 @@ async function init(){
   });
 
   await refresh();
+  // ensure status is ready after initial load
+  // If load didn't update status for any reason, ensure it becomes ready after a short timeout
+  setTimeout(()=>{
+    const el = document.getElementById('status-chip');
+    if(el && el.classList.contains('status-loading')){
+      console.warn('Status remained loading; forcing ready');
+      setStatus('ready');
+    }
+  }, 6000);
 }
 
 window.addEventListener('DOMContentLoaded', init);

@@ -11,12 +11,19 @@
 </head>
 <body>
   <header>
-    <h1>Essence Tactics Ideas</h1>
+    <div class="header-top">
+      <h1>Essence Tactics Ideas</h1>
+      <div id="status-chip" class="status-chip status-loading">Loading</div>
+    </div>
+  </header>
+
+  <div class="header-nav">
     <nav>
       <button id="tab-list" class="tab active">List</button>
       <button id="tab-add" class="tab">Add</button>
+      <button id="tab-edit" class="tab" disabled>Edit</button>
     </nav>
-  </header>
+  </div>
 
   <main>
     <section id="list-view" class="view">
@@ -39,6 +46,22 @@
         <div class="form-actions">
           <button type="submit">Save</button>
           <button type="button" id="cancel">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="edit-view" class="view hidden">
+      <form id="edit-idea-form">
+        <label>Type
+          <input id="fld-type-edit" placeholder="Type or choose..." autocomplete="off">
+          <div id="type-suggestions-edit" class="type-suggestions hidden" aria-hidden="true"></div>
+        </label>
+        <label>Name<input id="fld-name-edit" required maxlength="100"></label>
+        <label>Tags<input id="fld-tags-edit" placeholder="comma-separated"></label>
+        <label>Details<textarea id="fld-details-edit" maxlength="2000"></textarea></label>
+        <div class="form-actions">
+          <button type="submit">Save</button>
+          <button type="button" id="cancel-edit">Cancel</button>
         </div>
       </form>
     </section>
