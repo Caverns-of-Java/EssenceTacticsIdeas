@@ -1,4 +1,4 @@
-const CACHE_NAME = 'essence-shell-v3';
+const CACHE_NAME = 'essence-shell-v4';
 const ASSETS = [
   '/',
   '/index.html',

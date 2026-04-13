@@ -19,9 +19,10 @@
 
   <div class="header-nav">
     <nav>
-      <button id="tab-list" class="tab active">List</button>
-      <button id="tab-add" class="tab">Add</button>
-      <button id="tab-edit" class="tab" disabled>Edit</button>
+      <button id="tab-list" type="button" class="tab active">List</button>
+      <button id="tab-add" type="button" class="tab">Add</button>
+      <button id="tab-edit" type="button" class="tab" disabled>Edit</button>
+      <button id="tab-bin" type="button" class="tab">Bin</button>
     </nav>
   </div>
 
@@ -29,9 +30,16 @@
     <section id="list-view" class="view">
       <div class="controls">
         <input id="search" placeholder="Search by name, type, or tags" />
-        <button id="refresh">Refresh</button>
+        <button id="refresh" type="button">Refresh</button>
       </div>
       <ul id="ideas-list"></ul>
+    </section>
+
+    <section id="bin-view" class="view hidden">
+      <div class="controls">
+        <input id="search-bin" placeholder="Search deleted items" />
+      </div>
+      <ul id="bin-list"></ul>
     </section>
 
     <section id="add-view" class="view hidden">
@@ -61,6 +69,7 @@
         <label>Details<textarea id="fld-details-edit" maxlength="2000"></textarea></label>
         <div class="form-actions">
           <button type="submit" class="btn btn-primary">Save</button>
+          <button type="button" id="delete-edit" class="btn btn-danger">Delete</button>
           <button type="button" id="cancel-edit" class="btn btn-secondary">Cancel</button>
         </div>
       </form>
@@ -70,6 +79,6 @@
   </main>
 
   <script src="config.js"></script>
-  <script src="script.js"></script>
+  <script src="script.js?v=20260413-3"></script>
 </body>
 </html>

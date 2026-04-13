@@ -91,8 +91,12 @@ main, .view, form { overflow: visible; }
 	cursor: pointer;
 }
 .idea-header { display: flex; gap: 8px; align-items: center; }
+.idea-header + button {
+	margin-top: 0.5rem;
+}
 .idea-type { font-weight: 600; }
 .idea-details { white-space: pre-wrap; margin-top: 6px; color: #333; font-size: 0.95rem; }
+.bin-item .btn { margin-top: 10px; }
 
 /* Detail panel */
 .detail {

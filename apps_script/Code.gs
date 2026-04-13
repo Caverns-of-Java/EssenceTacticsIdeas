@@ -4,7 +4,15 @@ const SHEET_NAME = 'Ideas';
 function _getSheet(){
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(SHEET_NAME);
-  if(!sheet){ sheet = ss.insertSheet(SHEET_NAME); sheet.appendRow(['id','type','name','details','tags','lastUpdated']); }
+  if(!sheet){ sheet = ss.insertSheet(SHEET_NAME); sheet.appendRow(['id','type','name','details','tags','lastUpdated','softdelete']); }
+  else {
+    // Ensure there is a softdelete/deleted header column for migration
+    const firstRow = sheet.getDataRange().getValues()[0] || [];
+    const heads = firstRow.map(h => String(h||'').toLowerCase().trim());
+    if(heads.indexOf('softdelete') === -1 && heads.indexOf('deleted') === -1){
+      sheet.getRange(1, firstRow.length + 1).setValue('softdelete');
+    }
+  }
   return sheet;
 }
 
@@ -35,6 +43,7 @@ function doGet(e){
       if (s === 'name') return 'name';
       if (s === 'tags') return 'tags';
       if (s === 'id') return 'id';
+      if (s === 'softdelete' || s === 'deleted') return 'deleted';
       return h; // fallback to original
     }
 
@@ -75,9 +84,10 @@ function _add(obj){
   const rows = sheet.getDataRange().getValues();
   const id = _nextId(rows.slice(1));
   const now = new Date().toISOString();
-  const row = [id, obj.type||'', obj.name||'', obj.details||'', obj.tags||'', now];
+  // Append softdelete=false by default
+  const row = [id, obj.type||'', obj.name||'', obj.details||'', obj.tags||'', now, false];
   sheet.appendRow(row);
-  return _respond({ success:true, data: { id, type:row[1], name:row[2], details:row[3], tags:row[4], lastUpdated:now } });
+  return _respond({ success:true, data: { id, type:row[1], name:row[2], details:row[3], tags:row[4], lastUpdated:now, deleted:false } });
 }
 
 function _update(obj){
@@ -88,9 +98,12 @@ function _update(obj){
   for(let r=1;r<rows.length;r++){
     if(String(rows[r][0])===String(obj.id)){
       const now = new Date().toISOString();
-      const row = [obj.id, obj.type||rows[r][1], obj.name||rows[r][2], obj.details||rows[r][3], obj.tags||rows[r][4], now];
+      // Preserve existing softdelete column unless explicitly provided
+      const existingDeleted = typeof rows[r][6] !== 'undefined' ? rows[r][6] : false;
+      const newDeleted = (typeof obj.deleted !== 'undefined') ? obj.deleted : existingDeleted;
+      const row = [obj.id, obj.type||rows[r][1], obj.name||rows[r][2], obj.details||rows[r][3], obj.tags||rows[r][4], now, newDeleted];
       sheet.getRange(r+1,1,1,row.length).setValues([row]);
-      return _respond({ success:true, data: { id:obj.id, type:row[1], name:row[2], details:row[3], tags:row[4], lastUpdated:now } });
+      return _respond({ success:true, data: { id:obj.id, type:row[1], name:row[2], details:row[3], tags:row[4], lastUpdated:now, deleted:newDeleted } });
     }
   }
   return _respond({ success:false, error:'ROW_NOT_FOUND' });
@@ -100,10 +113,19 @@ function _delete(id){
   if(!id) return _respond({ success:false, error:'MISSING_ID' });
   const sheet = _getSheet();
   const rows = sheet.getDataRange().getValues();
+  const headers = rows[0] || [];
+  const softIdx = headers.map(h=>String(h||'').toLowerCase().trim()).indexOf('softdelete');
   for(let r=1;r<rows.length;r++){
     if(String(rows[r][0])===String(id)){
-      sheet.deleteRow(r+1);
-      return _respond({ success:true, message:'deleted', id });
+      if(softIdx !== -1){
+        // Mark softdelete true instead of hard deleting
+        sheet.getRange(r+1, softIdx+1).setValue(true);
+        return _respond({ success:true, message:'soft-deleted', id });
+      } else {
+        // fallback to hard delete if column missing
+        sheet.deleteRow(r+1);
+        return _respond({ success:true, message:'deleted', id });
+      }
     }
   }
   return _respond({ success:false, error:'ROW_NOT_FOUND' });
